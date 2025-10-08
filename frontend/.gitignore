@@ -12,6 +12,22 @@ dist
 dist-ssr
 *.local
 
+# Vite output
+/.vite
+.turbo
+.cache
+
+# Env files
+.env
+.env.*
+
+# Local overrides
+.env.local
+
+# Logs
+logs
+*.log
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

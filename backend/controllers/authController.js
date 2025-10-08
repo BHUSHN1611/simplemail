@@ -1,20 +1,20 @@
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
-const { oauth2Client } = require('../utils/googleClient');
+const { oauth2Client, SCOPES } = require('../utils/googleClient');
 const User = require('../models/userModel');
-import nodemailer from "nodemailer"
 
-/* GET Google Authentication API. */
 exports.googleAuth = async (req, res, next) => {
     const code = req.query.code;
     try {
         const googleRes = await oauth2Client.getToken(code);
         oauth2Client.setCredentials(googleRes.tokens);
+        
         const userRes = await axios.get(
             `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`
         );
+        
         const { email, name, picture } = userRes.data;
-        // console.log(userRes);
+        
         let user = await User.findOne({ email });
 
         if (!user) {
@@ -22,7 +22,16 @@ exports.googleAuth = async (req, res, next) => {
                 name,
                 email,
                 image: picture,
+                refreshToken: googleRes.tokens.refresh_token, // Store refresh token
+                accessToken: googleRes.tokens.access_token,   // Store access token
+                tokenExpiry: new Date(googleRes.tokens.expiry_date) // Store expiry
             });
+        } else {
+            // Update tokens
+            user.refreshToken = googleRes.tokens.refresh_token || user.refreshToken;
+            user.accessToken = googleRes.tokens.access_token;
+            user.tokenExpiry = new Date(googleRes.tokens.expiry_date);
+            await user.save();
         }
        
         const { _id } = user;
@@ -30,36 +39,21 @@ exports.googleAuth = async (req, res, next) => {
             process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_TIMEOUT,
         });
+        
         res.status(200).json({
             message: 'success',
             token,
-            user,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                image: user.image
+            },
         });
     } catch (err) {
+        console.error('Auth error:', err);
         res.status(500).json({
             message: "Internal Server Error"
         })
     }
 };
-
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    type: "OAuth2",
-    user: "you@gmail.com",
-    clientId: "GOOGLE_CLIENT_ID",
-    clientSecret: "GOOGLE_CLIENT_SECRET",
-    refreshToken: "REFRESH_TOKEN",
-    accessToken: "ACCESS_TOKEN"
-  }
-});
-
-await transporter.sendMail({
-  from: "you@gmail.com",
-  to: "friend@gmail.com",
-  subject: "Hello via OAuth",
-  text: "This is a secure mail using OAuth2!"
-});
-
