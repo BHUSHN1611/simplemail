@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const { connectDB } = require('./models/dbConnect');
 const app = express();
 require('dotenv').config();
-require('./models/dbConnect');
 const authRoutes = require('./routes/authRoutes');
 const emailRoutes = require('./routes/emailRoutes');
 const PORT = process.env.PORT || 8080;
@@ -42,6 +42,22 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on ${PORT}`)
-});
+// Initialize database connection and start server
+const startServer = async () => {
+    try {
+        // Connect to MongoDB
+        await connectDB();
+
+        // Start the server after successful DB connection
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`✅ Server is running on port ${PORT}`);
+            console.log(`🌐 Access your application at: http://localhost:${PORT}`);
+        });
+    } catch (error) {
+        console.error('❌ Failed to start server:', error.message);
+        process.exit(1);
+    }
+};
+
+// Start the server
+startServer();
