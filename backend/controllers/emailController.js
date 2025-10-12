@@ -27,7 +27,7 @@ exports.sendEmail = async (req, res) => {
 
         let decoded;
         try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
+            decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key-for-development-only');
         } catch (jwtError) {
             return res.status(401).json({
                 error: 'Token verification failed',

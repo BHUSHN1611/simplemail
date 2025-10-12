@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 // Use Vite environment variable for production backend base URL.
-// In production set VITE_API_BASE to your backend URL (e.g. https://api.example.com)
-// "https://qumail-backend-4s2a.onrender.com"
-const API_BASE = import.meta.env.VITE_API_BASE || "https://qumail-backend-4s2a.onrender.com" || 'http://localhost:8080';
+// In production set VITE_API_BASE to your backend URL (e.g. https://your-backend.onrender.com)
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 
 const api = axios.create({
     baseURL: API_BASE,

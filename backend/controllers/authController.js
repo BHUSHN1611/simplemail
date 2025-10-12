@@ -65,8 +65,8 @@ exports.googleAuth = async (req, res, next) => {
         console.log('🔐 JWT payload:', tokenPayload);
 
         const token = jwt.sign(tokenPayload,
-            process.env.JWT_SECRET, {
-            expiresIn: process.env.JWT_TIMEOUT,
+            process.env.JWT_SECRET || 'fallback-secret-key-for-development-only', {
+            expiresIn: process.env.JWT_TIMEOUT || '24h',
         });
 
         console.log('✅ JWT generated successfully');
@@ -146,7 +146,7 @@ exports.appPasswordLogin = async (req, res) => {
         }
 
         const tokenPayload = { _id: user._id, email: user.email };
-        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_TIMEOUT });
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'fallback-secret-key-for-development-only', { expiresIn: process.env.JWT_TIMEOUT || '24h' });
 
         return res.json({
             message: 'success',
