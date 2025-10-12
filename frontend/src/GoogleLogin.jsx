@@ -57,8 +57,16 @@ const GoogleLogin = (props) => {
                     body: JSON.stringify({ email, appPassword, imapHost })
                 });
                 console.log(appPassword)
+
+                // Check if response is OK before parsing JSON
+                if (!res.ok) {
+                    console.error('Login failed:', res.status, res.statusText);
+                    const text = await res.text();
+                    console.error('Response body:', text);
+                    throw new Error(`Login failed: ${res.status} ${res.statusText}`);
+                }
+
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.message || 'Login failed');
 
                 const validation = validateUserData(data);
                 if (!validation.isValid) throw new Error(validation.error);
