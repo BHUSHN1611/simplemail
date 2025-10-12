@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    restart: always
+    env_file: ./backend/.env
+    ports:
+      - "8080:8080"
+    networks:
+      - simplemail-net
+
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - simplemail-net
+
+networks:
+  simplemail-net:
+    driver: bridge

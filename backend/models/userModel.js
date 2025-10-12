@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema({
     },
     imapSecure: {
         type: Boolean
+    },
+    isDemoSession: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

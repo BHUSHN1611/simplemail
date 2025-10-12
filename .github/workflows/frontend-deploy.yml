@@ -1,0 +1,37 @@
+name: Frontend deploy (Vercel)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }} # Required
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }} # Required
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # Required
+          working-directory: frontend
+          prod: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
