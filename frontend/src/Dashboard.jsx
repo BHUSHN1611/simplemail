@@ -49,18 +49,52 @@ const Dashboard = () => {
   useEffect(() => {
     const handler = async (e) => {
       try {
+        console.log('📧 Send email event received:', e.detail);
         setSendingEmail(true);
         setStatusMessage('');
         const data = (e && e.detail) ? e.detail : {};
         const payload = { to: data.to || '', subject: data.subject || '', body: data.body || '', cc: '', bcc: '' };
+
+        console.log('📧 Sending email with payload:', payload);
+
+        // Check if user is authenticated
+        const userInfo = localStorage.getItem('user-info');
+        if (!userInfo) {
+          setStatusMessage('❌ Please log in first');
+          return;
+        }
+
+        const user = JSON.parse(userInfo);
+        console.log('📧 User info:', { email: user.user?.email, hasToken: !!user.token });
+
         await sendEmail(payload);
-        setStatusMessage('Email sent');
+        setStatusMessage('✅ Email sent successfully!');
         setComposeOpen(false);
         // notify other parts of app to refresh
         window.dispatchEvent(new CustomEvent('mailSent'));
+
+        // Auto-clear success message after 5 seconds
+        setTimeout(() => setStatusMessage(''), 5000);
       } catch (err) {
-        console.error('Send failed', err);
-        setStatusMessage('Failed to send');
+        console.error('❌ Send failed:', err);
+        console.error('❌ Error details:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status
+        });
+
+        if (err.response?.status === 401) {
+          setStatusMessage('❌ Authentication failed - please log in again');
+        } else if (err.response?.status === 403) {
+          setStatusMessage('❌ Access denied - check your permissions');
+        } else if (err.message.includes('Network Error') || err.message.includes('Failed to fetch')) {
+          setStatusMessage('❌ Network error - check your connection');
+        } else {
+          setStatusMessage(`❌ Failed to send: ${err.response?.data?.message || err.message}`);
+        }
+
+        // Auto-clear error message after 8 seconds
+        setTimeout(() => setStatusMessage(''), 8000);
       } finally {
         setSendingEmail(false);
       }
@@ -91,6 +125,21 @@ const Dashboard = () => {
       </div>
 
       <ComposeWindow composeOpen={composeOpen} setComposeOpen={setComposeOpen} />
+
+      {/* Status Message Display */}
+      {statusMessage && (
+        <div className={`fixed bottom-4 right-4 p-3 lg:p-4 rounded-lg text-white shadow-lg border-l-4 z-50 max-w-sm ${
+          statusMessage.includes('✅')
+            ? 'bg-green-600 border-green-400'
+            : statusMessage.includes('❌')
+            ? 'bg-red-600 border-red-400'
+            : 'bg-blue-600 border-blue-400'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm lg:text-base">{statusMessage}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -236,8 +285,10 @@ function ComposeWindow({ composeOpen, setComposeOpen }) {
         }}
       >
         <div className="flex items-center gap-2 lg:gap-3">
-          <div className="w-2 h-2 lg:w-3 lg:h-3 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse"></div>
-          <h3 className="font-semibold text-sm lg:text-base xl:text-lg text-gray-100">New Message</h3>
+          <div className={`w-2 h-2 lg:w-3 lg:h-3 rounded-full ${sendingEmail ? 'bg-yellow-500 animate-pulse' : 'bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse'}`}></div>
+          <h3 className="font-semibold text-sm lg:text-base xl:text-lg text-gray-100">
+            New Message {sendingEmail && <span className="text-yellow-400">• Sending...</span>}
+          </h3>
         </div>
 
         <div className="flex items-center gap-1">
@@ -321,19 +372,29 @@ function ComposeWindow({ composeOpen, setComposeOpen }) {
 
             <button
               onClick={() => {
+                console.log('🚀 Send button clicked with data:', { to: localTo, subject: localSubject, body: localBody });
                 const ev = new CustomEvent('dashboardComposeSend', { detail: { to: localTo, subject: localSubject, body: localBody } });
                 window.dispatchEvent(ev);
               }}
-              disabled={!localTo || !localSubject}
+              disabled={!localTo || !localSubject || sendingEmail}
               className="px-4 lg:px-6 xl:px-8 py-2 lg:py-2.5 xl:py-3 rounded-lg transition-all flex items-center gap-2 lg:gap-3 font-medium text-sm lg:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-purple-500/30 disabled:hover:shadow-none"
               style={{
-                backgroundColor: localTo && localSubject ? '#6633EE' : '#4a4a5e',
+                backgroundColor: (localTo && localSubject && !sendingEmail) ? '#6633EE' : '#4a4a5e',
                 color: 'white',
-                transform: localTo && localSubject ? 'scale(1)' : 'scale(0.98)'
+                transform: (localTo && localSubject && !sendingEmail) ? 'scale(1)' : 'scale(0.98)'
               }}
             >
-              <Send size={14} className="lg:w-4 lg:h-4" />
-              <span className="hidden sm:inline">Send</span>
+              {sendingEmail ? (
+                <>
+                  <div className="w-3 h-3 lg:w-4 lg:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span className="hidden sm:inline">Sending...</span>
+                </>
+              ) : (
+                <>
+                  <Send size={14} className="lg:w-4 lg:h-4" />
+                  <span className="hidden sm:inline">Send</span>
+                </>
+              )}
             </button>
           </div>
         </>

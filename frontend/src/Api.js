@@ -47,8 +47,20 @@ export const googleAuth = (accessToken) => {
 };
 
 export const sendEmail = (emailData) => {
+    console.log('🚀 API: Sending email request to:', '/email/send');
+    console.log('📧 Email data:', emailData);
+
     return api.post('/email/send', emailData)
-        .then(response => response.data);
+        .then(response => {
+            console.log('✅ API: Email sent successfully:', response.data);
+            return response.data;
+        })
+        .catch(error => {
+            console.error('❌ API: Email send failed:', error);
+            console.error('❌ API: Error response:', error.response?.data);
+            console.error('❌ API: Error status:', error.response?.status);
+            throw error;
+        });
 };
 
 export const getEmails = ({ q = '', pageToken = '', limit, folder = 'Inbox' } = {}) => {

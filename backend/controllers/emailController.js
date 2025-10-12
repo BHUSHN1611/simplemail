@@ -5,14 +5,20 @@ const nodemailer = require('nodemailer');
 // Send email
 exports.sendEmail = async (req, res) => {
     try {
+        console.log('📧 Email send request received');
+        console.log('📧 Request headers:', req.headers);
+        console.log('📧 Request body:', req.body);
+
         const authHeader = req.headers.authorization;
 
         if (!authHeader) {
+            console.error('❌ No authorization header provided');
             return res.status(401).json({ error: 'No authorization header provided' });
         }
 
         const token = authHeader.split(' ')[1];
         if (!token) {
+            console.error('❌ No token provided in authorization header');
             return res.status(401).json({ error: 'No token provided in authorization header' });
         }
 
@@ -28,7 +34,9 @@ exports.sendEmail = async (req, res) => {
         let decoded;
         try {
             decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key-for-development-only');
+            console.log('✅ JWT token verified for user:', decoded.email);
         } catch (jwtError) {
+            console.error('❌ JWT verification failed:', jwtError.message);
             return res.status(401).json({
                 error: 'Token verification failed',
                 details: jwtError.message
@@ -37,8 +45,10 @@ exports.sendEmail = async (req, res) => {
 
         const user = await User.findById(decoded._id);
         if (!user) {
+            console.error('❌ User not found with ID:', decoded._id);
             return res.status(404).json({ error: 'User not found' });
         }
+        console.log('✅ User found:', user.email);
 
         // Fix isDemoSession field for existing users if it's not properly set
         if (user.email === 'qumail1611@gmail.com' && user.isDemoSession !== true) {
@@ -108,6 +118,12 @@ exports.sendEmail = async (req, res) => {
         };
 
         const result = await transporter.sendMail(mailOptions);
+        console.log('✅ Email sent successfully:', {
+            messageId: result.messageId,
+            from: mailFrom,
+            to: to,
+            subject: subject
+        });
 
         res.json({
             success: true,
