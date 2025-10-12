@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
     try {
         // Get MongoDB URI from environment variables
-        const DB = process.env.DB_URL || process.env.MONGODB_URI;
+        const DB = "mongodb+srv://bhushn:railmadat16@cluster0.aeoisat.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" || process.env.MONGODB_URI;
 
         if (!DB) {
             throw new Error('MongoDB URI not found in environment variables');
