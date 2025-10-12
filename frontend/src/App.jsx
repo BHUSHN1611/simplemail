@@ -5,7 +5,6 @@ import {BrowserRouter, Route, Routes, Navigate} from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { useState } from 'react';
 import RefrshHandler from './RefrshHandler';
-import NotFound from './notfound'
 import GradientBackground from './components/GradientBackground';
 function App() {
 	const client_Id = import.meta.env.VITE_GOOGLE_CLIENT_ID || "1010783366961-lrshmv8dbgmmg2epinjvsq91j7tjhb70.apps.googleusercontent.com"
@@ -27,7 +26,9 @@ function App() {
 				<Route path="/login" element={<GoogleWrapper />} />
 				<Route path="/" element={<Navigate to="/login" />} />
 				<Route path='/dashboard' element={<PrivateRoute element={<Dashboard/>}/>}/>
-				<Route path="*" element={<NotFound/>} />
+				<Route path="*" element={<div>Not found 404
+					<div><button onClick={()=> navigate('/')}>Login</button></div>
+				</div>} />
 			</Routes>
 	</BrowserRouter>
 	);
