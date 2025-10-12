@@ -8,6 +8,8 @@ import GradientBackground from "./components/GradientBackground";
 import HeroSection from "./components/HeroSection";
 import Navbar from './components/Navbar';
 import Footer from "./components/Footer";
+// API functions
+import { appPasswordLogin } from "./Api";
 // utilities
 import {
     AUTH_CONSTANTS,
@@ -51,22 +53,9 @@ const GoogleLogin = (props) => {
             setIsAuthenticating(true);
             setAuthError(null);
             try {
-                const res = await fetch(`${API_BASE}/auth/app-login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, appPassword, imapHost })
-                });
-                console.log(appPassword)
+                console.log('🔐 Attempting login for:', email);
 
-                // Check if response is OK before parsing JSON
-                if (!res.ok) {
-                    console.error('Login failed:', res.status, res.statusText);
-                    const text = await res.text();
-                    console.error('Response body:', text);
-                    throw new Error(`Login failed: ${res.status} ${res.statusText}`);
-                }
-
-                const data = await res.json();
+                const data = await appPasswordLogin({ email, appPassword, imapHost });
 
                 const validation = validateUserData(data);
                 if (!validation.isValid) throw new Error(validation.error);

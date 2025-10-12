@@ -11,7 +11,11 @@ console.log(`🚀 Server will start on port: ${PORT}`);
 // Parse allowed origins from environment variable
 const allowedOrigins = process.env.ALLOWED_ORIGINS ?
     process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()) :
-    ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://qumail-7cpm.onrender.com'];
+    ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000'];
+
+console.log('🔧 CORS: Allowed origins:', allowedOrigins);
+console.log('🔧 CORS: NODE_ENV:', process.env.NODE_ENV);
+console.log('🔧 CORS: PORT:', process.env.PORT);
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -30,7 +34,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json()); // Add this to parse JSON bodies
+app.use(express.json({ limit: '10mb' })); // Add this to parse JSON bodies with size limit
+app.use(express.urlencoded({ extended: true })); // Add this to parse URL-encoded bodies
 app.use('/auth/', authRoutes);
 app.use('/email/', emailRoutes); // Add email routes back for sending functionality
 
