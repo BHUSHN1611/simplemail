@@ -3,7 +3,7 @@ import axios from 'axios';
 // Use Vite environment variable for production backend base URL.
 // In production set VITE_API_BASE to your backend URL (e.g. https://your-backend.onrender.com)
 // For Render deployment, use: https://your-backend-service-name.onrender.com
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://qumail-backend-4s2a.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 
 const api = axios.create({
     baseURL: API_BASE,
@@ -49,16 +49,28 @@ export const googleAuth = (accessToken) => {
 export const sendEmail = (emailData) => {
     console.log('🚀 API: Sending email request to:', '/email/send');
     console.log('📧 Email data:', emailData);
+    console.log('🔍 API: Full request config:', {
+        url: `${API_BASE}/email/send`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('user-info') ? JSON.parse(localStorage.getItem('user-info')).token : 'NO_TOKEN'}`
+        },
+        data: emailData
+    });
 
     return api.post('/email/send', emailData)
         .then(response => {
             console.log('✅ API: Email sent successfully:', response.data);
+            console.log('✅ API: Full response:', response);
             return response.data;
         })
         .catch(error => {
             console.error('❌ API: Email send failed:', error);
             console.error('❌ API: Error response:', error.response?.data);
             console.error('❌ API: Error status:', error.response?.status);
+            console.error('❌ API: Error headers:', error.response?.headers);
+            console.error('❌ API: Request that failed:', error.config);
             throw error;
         });
 };

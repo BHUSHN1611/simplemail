@@ -50,24 +50,47 @@ const Dashboard = () => {
     const handler = async (e) => {
       try {
         console.log('📧 Send email event received:', e.detail);
+        console.log('📧 Event object:', e);
         setSendingEmail(true);
         setStatusMessage('');
         const data = (e && e.detail) ? e.detail : {};
-        const payload = { to: data.to || '', subject: data.subject || '', body: data.body || '', cc: '', bcc: '' };
+        console.log('📧 Raw event data:', data);
 
+        // Validate required fields
+        if (!data.to || !data.subject || !data.body) {
+          console.error('❌ Missing required fields:', { to: !!data.to, subject: !!data.subject, body: !!data.body });
+          setStatusMessage('❌ Please fill in all required fields (To, Subject, Body)');
+          return;
+        }
+
+        const payload = { to: data.to.trim(), subject: data.subject.trim(), body: data.body.trim(), cc: '', bcc: '' };
         console.log('📧 Sending email with payload:', payload);
 
         // Check if user is authenticated
         const userInfo = localStorage.getItem('user-info');
         if (!userInfo) {
+          console.error('❌ No user info found in localStorage');
           setStatusMessage('❌ Please log in first');
           return;
         }
 
         const user = JSON.parse(userInfo);
-        console.log('📧 User info:', { email: user.user?.email, hasToken: !!user.token });
+        console.log('📧 User info:', {
+          email: user.user?.email,
+          hasToken: !!user.token,
+          tokenLength: user.token?.length,
+          userId: user.user?._id
+        });
 
+        if (!user.token) {
+          console.error('❌ No token found in user info');
+          setStatusMessage('❌ Authentication token missing - please log in again');
+          return;
+        }
+
+        console.log('📧 About to call sendEmail API...');
         await sendEmail(payload);
+        console.log('✅ Email sent successfully!');
         setStatusMessage('✅ Email sent successfully!');
         setComposeOpen(false);
         // notify other parts of app to refresh
@@ -80,15 +103,20 @@ const Dashboard = () => {
         console.error('❌ Error details:', {
           message: err.message,
           response: err.response?.data,
-          status: err.response?.status
+          status: err.response?.status,
+          stack: err.stack
         });
 
         if (err.response?.status === 401) {
           setStatusMessage('❌ Authentication failed - please log in again');
         } else if (err.response?.status === 403) {
           setStatusMessage('❌ Access denied - check your permissions');
+        } else if (err.response?.status === 404) {
+          setStatusMessage('❌ Email service not found - please contact support');
         } else if (err.message.includes('Network Error') || err.message.includes('Failed to fetch')) {
           setStatusMessage('❌ Network error - check your connection');
+        } else if (err.response?.data?.error) {
+          setStatusMessage(`❌ ${err.response.data.error}`);
         } else {
           setStatusMessage(`❌ Failed to send: ${err.response?.data?.message || err.message}`);
         }
@@ -124,7 +152,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <ComposeWindow composeOpen={composeOpen} setComposeOpen={setComposeOpen} />
+      <ComposeWindow composeOpen={composeOpen} setComposeOpen={setComposeOpen} sendingEmail={sendingEmail} />
 
       {/* Status Message Display */}
       {statusMessage && (
@@ -223,7 +251,7 @@ function Sidebar({ sidebarOpen, setComposeOpen, activeFolder, setActiveFolder })
   );
 }
 
-function ComposeWindow({ composeOpen, setComposeOpen }) {
+function ComposeWindow({ composeOpen, setComposeOpen, sendingEmail = false }) {
   const [localTo, setLocalTo] = useState('');
   const [localSubject, setLocalSubject] = useState('');
   const [localBody, setLocalBody] = useState('');
@@ -372,7 +400,36 @@ function ComposeWindow({ composeOpen, setComposeOpen }) {
 
             <button
               onClick={() => {
-                console.log('🚀 Send button clicked with data:', { to: localTo, subject: localSubject, body: localBody });
+                console.log('🚀 Send button clicked!');
+                console.log('📝 Form data at send time:', {
+                  to: localTo,
+                  subject: localSubject,
+                  body: localBody,
+                  toLength: localTo.length,
+                  subjectLength: localSubject.length,
+                  bodyLength: localBody.length
+                });
+
+                // Validate form data before sending
+                if (!localTo.trim()) {
+                  console.error('❌ To field is empty');
+                  setStatusMessage('❌ Please enter recipient email address');
+                  return;
+                }
+
+                if (!localSubject.trim()) {
+                  console.error('❌ Subject field is empty');
+                  setStatusMessage('❌ Please enter email subject');
+                  return;
+                }
+
+                if (!localBody.trim()) {
+                  console.error('❌ Body field is empty');
+                  setStatusMessage('❌ Please enter email body');
+                  return;
+                }
+
+                console.log('✅ Form validation passed, dispatching event...');
                 const ev = new CustomEvent('dashboardComposeSend', { detail: { to: localTo, subject: localSubject, body: localBody } });
                 window.dispatchEvent(ev);
               }}
