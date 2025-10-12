@@ -3,7 +3,7 @@ import axios from 'axios';
 // Use Vite environment variable for production backend base URL.
 // In production set VITE_API_BASE to your backend URL (e.g. https://your-backend.onrender.com)
 // For Render deployment, use: https://your-backend-service-name.onrender.com
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 const api = axios.create({
     baseURL: API_BASE,
@@ -47,6 +47,13 @@ export const googleAuth = (accessToken) => {
 };
 
 export const sendEmail = (emailData) => {
+    // Validate API_BASE is set
+    if (!API_BASE) {
+        const error = new Error('API_BASE environment variable is not configured. Please check your .env file.');
+        console.error('❌ API: Configuration error:', error.message);
+        throw error;
+    }
+
     console.log('🚀 API: Sending email request to:', '/email/send');
     console.log('📧 Email data:', emailData);
     console.log('🔍 API: Full request config:', {
@@ -67,11 +74,31 @@ export const sendEmail = (emailData) => {
         })
         .catch(error => {
             console.error('❌ API: Email send failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            console.error('❌ API: Error headers:', error.response?.headers);
-            console.error('❌ API: Request that failed:', error.config);
-            throw error;
+            console.error('❌ API: Full error object:', {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+                config: error.config,
+                code: error.code,
+                response: error.response ? {
+                    data: error.response.data,
+                    status: error.response.status,
+                    headers: error.response.headers,
+                    statusText: error.response.statusText
+                } : 'No response object',
+                request: error.request ? 'Request object exists' : 'No request object'
+            });
+
+            // Re-throw with more detailed error message
+            const enhancedError = new Error(
+                error.response?.data?.message ||
+                error.response?.data?.error ||
+                error.message ||
+                'Unknown error occurred'
+            );
+            enhancedError.originalError = error;
+            enhancedError.response = error.response;
+            throw enhancedError;
         });
 };
 

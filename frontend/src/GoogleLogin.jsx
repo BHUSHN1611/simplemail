@@ -2,7 +2,7 @@ import {useState} from "react";
 import {useNavigate} from 'react-router-dom';
 import Teamname from "./components/Teamname";
 // API base URL
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE;
 // components
 import GradientBackground from "./components/GradientBackground";
 import HeroSection from "./components/HeroSection";
