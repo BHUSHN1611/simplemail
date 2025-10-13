@@ -11,7 +11,7 @@ console.log(`🚀 Server will start on port: ${PORT}`);
 // Parse allowed origins from environment variable
 const allowedOrigins = process.env.ALLOWED_ORIGINS ?
     process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()) :
-    ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000'];
+    ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://qumail-7epm.onrender.com'];
 
 console.log('🔧 CORS: Allowed origins:', allowedOrigins);
 console.log('🔧 CORS: NODE_ENV:', process.env.NODE_ENV);
