@@ -22,7 +22,7 @@ const EmailClient = ({ activeFolder, userEmail, appPassword }) => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/fetch-mails', {
+      const response = await fetch('https://qumail-backend-4s2a.onrender.com/fetch-mails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
