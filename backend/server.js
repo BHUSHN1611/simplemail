@@ -4,13 +4,15 @@ import nodemailer from "nodemailer";
 import Imap from "imap";
 import { simpleParser } from "mailparser";
 
-app.use(cors({
-  origin: "*"   // or specify your frontend domain
-}));
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.use(cors({
+  origin: "*"   // or specify your frontend domain
+}));
+
 
 // Store active sessions (in production, use Redis or database)
 const sessions = new Map();
