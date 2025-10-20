@@ -8,7 +8,7 @@ const app = express();
 
 // ✅ CORS setup (allow only your frontend)
 app.use(cors({
-  origin: "https://qumail-7cpm.onrender.com",
+  origin: ["https://qumail-7cpm.onrender.com", "http://localhost:5173"],
   methods: ["GET", "POST"],
   credentials: true
 }));
@@ -18,11 +18,47 @@ app.use(express.json());
 // ✅ Store active sessions (temporary)
 const sessions = new Map();
 
+/* -------------------- HEALTH CHECK ENDPOINT -------------------- */
+app.get("/", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    message: "Qumail Backend is running",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "healthy" });
+});
+
 /* -------------------- LOGIN ENDPOINT -------------------- */
 app.post("/login", async (req, res) => {
-  const { gmail, appPassword } = req.body;
+  console.log("Login request received:", { body: req.body });
+  
+  const { gmail, appPassword, imapHost } = req.body;
+
+  // Validate input
+  if (!gmail || !appPassword) {
+    console.log("Missing credentials");
+    return res.status(400).json({ 
+      success: false, 
+      message: "Email and password are required" 
+    });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(gmail)) {
+    console.log("Invalid email format:", gmail);
+    return res.status(400).json({ 
+      success: false, 
+      message: "Invalid email format" 
+    });
+  }
 
   try {
+    console.log("Attempting to verify credentials for:", gmail);
+    
     // Verify credentials with nodemailer
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -33,6 +69,7 @@ app.post("/login", async (req, res) => {
     });
 
     await transporter.verify();
+    console.log("Credentials verified successfully for:", gmail);
 
     // Create session
     const sessionId = Date.now().toString();
@@ -47,15 +84,32 @@ app.post("/login", async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
+    
+    // More specific error messages
+    let errorMessage = "Invalid credentials";
+    if (error.code === "EAUTH") {
+      errorMessage = "Invalid email or app password. Please check your credentials.";
+    } else if (error.code === "ESOCKET") {
+      errorMessage = "Network error. Please check your connection.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     res.status(400).json({ 
       success: false, 
-      message: "Invalid credentials" 
+      message: errorMessage
     });
   }
 });
 
 /* -------------------- FETCH EMAILS ENDPOINT -------------------- */
 app.post("/fetch-mails", async (req, res) => {
+  console.log("Fetch mails request received");
   const { email, appPassword, maxEmails = 10 } = req.body;
 
   if (!email || !appPassword) {
@@ -79,6 +133,7 @@ app.post("/fetch-mails", async (req, res) => {
 
 /* -------------------- SEND EMAIL ENDPOINT -------------------- */
 app.post("/send-email", async (req, res) => {
+  console.log("Send email request received");
   const { email, appPassword, to, subject, body } = req.body;
 
   if (!email || !appPassword || !to || !subject) {
@@ -195,8 +250,19 @@ function fetchImapEmails(email, password, maxEmails = 10) {
   });
 }
 
+/* -------------------- ERROR HANDLER -------------------- */
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ 
+    success: false, 
+    error: "Internal server error" 
+  });
+});
+
 /* -------------------- SERVER START -------------------- */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
+  console.log(`📧 Qumail Backend Ready`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
