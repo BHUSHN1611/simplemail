@@ -14,8 +14,6 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(cors());
-app.use(express.json());
 
 
 
@@ -207,6 +205,6 @@ function fetchImapEmails(email, password, maxEmails = 10) {
 }
 
 const PORT = 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
