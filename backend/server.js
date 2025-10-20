@@ -4,6 +4,10 @@ import nodemailer from "nodemailer";
 import Imap from "imap";
 import { simpleParser } from "mailparser";
 
+app.use(cors({
+  origin: "*"   // or specify your frontend domain
+}));
+
 const app = express();
 app.use(cors());
 app.use(express.json());
