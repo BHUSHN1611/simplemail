@@ -6,12 +6,17 @@ import { simpleParser } from "mailparser";
 
 
 const app = express();
+
+app.use(express.json());
+app.use(cors({
+  origin: "https://qumail-7cpm.onrender.com",
+  methods: ["GET", "POST"],
+  credentials: true
+}));
+
 app.use(cors());
 app.use(express.json());
 
-app.use(cors({
-  origin: "*"   // or specify your frontend domain
-}));
 
 
 // Store active sessions (in production, use Redis or database)
