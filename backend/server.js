@@ -4,23 +4,21 @@ import nodemailer from "nodemailer";
 import Imap from "imap";
 import { simpleParser } from "mailparser";
 
-
 const app = express();
 
-app.use(express.json());
+// ✅ CORS setup (allow only your frontend)
 app.use(cors({
   origin: "https://qumail-7cpm.onrender.com",
   methods: ["GET", "POST"],
   credentials: true
 }));
 
+app.use(express.json());
 
-
-
-// Store active sessions (in production, use Redis or database)
+// ✅ Store active sessions (temporary)
 const sessions = new Map();
 
-// Login endpoint
+/* -------------------- LOGIN ENDPOINT -------------------- */
 app.post("/login", async (req, res) => {
   const { gmail, appPassword } = req.body;
 
@@ -36,7 +34,7 @@ app.post("/login", async (req, res) => {
 
     await transporter.verify();
 
-    // Store session
+    // Create session
     const sessionId = Date.now().toString();
     sessions.set(sessionId, { gmail, appPassword });
 
@@ -56,8 +54,8 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Fetch mails endpoint
-app.post('/fetch-mails', async (req, res) => {
+/* -------------------- FETCH EMAILS ENDPOINT -------------------- */
+app.post("/fetch-mails", async (req, res) => {
   const { email, appPassword, maxEmails = 10 } = req.body;
 
   if (!email || !appPassword) {
@@ -79,8 +77,8 @@ app.post('/fetch-mails', async (req, res) => {
   }
 });
 
-// Send email endpoint
-app.post('/send-email', async (req, res) => {
+/* -------------------- SEND EMAIL ENDPOINT -------------------- */
+app.post("/send-email", async (req, res) => {
   const { email, appPassword, to, subject, body } = req.body;
 
   if (!email || !appPassword || !to || !subject) {
@@ -101,10 +99,10 @@ app.post('/send-email', async (req, res) => {
 
     const info = await transporter.sendMail({
       from: email,
-      to: to,
-      subject: subject,
+      to,
+      subject,
       text: body,
-      html: `<div style="font-family: Arial, sans-serif;">${body.replace(/\n/g, '<br>')}</div>`
+      html: `<div style="font-family: Arial, sans-serif;">${body.replace(/\n/g, "<br>")}</div>`,
     });
 
     res.json({ 
@@ -121,22 +119,22 @@ app.post('/send-email', async (req, res) => {
   }
 });
 
-// Helper function to fetch emails via IMAP
+/* -------------------- HELPER: FETCH IMAP EMAILS -------------------- */
 function fetchImapEmails(email, password, maxEmails = 10) {
   return new Promise((resolve, reject) => {
     const imap = new Imap({
       user: email,
-      password: password,
-      host: 'imap.gmail.com',
+      password,
+      host: "imap.gmail.com",
       port: 993,
       tls: true,
-      tlsOptions: { rejectUnauthorized: false }
+      tlsOptions: { rejectUnauthorized: false },
     });
 
     const emails = [];
 
-    imap.once('ready', () => {
-      imap.openBox('INBOX', true, (err, box) => {
+    imap.once("ready", () => {
+      imap.openBox("INBOX", true, (err, box) => {
         if (err) {
           imap.end();
           return reject(err);
@@ -148,54 +146,47 @@ function fetchImapEmails(email, password, maxEmails = 10) {
           return resolve([]);
         }
 
-        // Fetch the last N messages
         const start = Math.max(1, totalMessages - maxEmails + 1);
         const fetchRange = `${start}:${totalMessages}`;
-        
-        const fetch = imap.seq.fetch(fetchRange, {
-          bodies: '',
-          struct: true
-        });
 
-        fetch.on('message', (msg, seqno) => {
-          msg.on('body', (stream) => {
+        const fetch = imap.seq.fetch(fetchRange, { bodies: "" });
+
+        fetch.on("message", (msg, seqno) => {
+          msg.on("body", (stream) => {
             simpleParser(stream, (err, parsed) => {
               if (err) {
-                console.error('Parse error:', err);
+                console.error("Parse error:", err);
                 return;
               }
 
               emails.push({
                 id: seqno,
-                subject: parsed.subject || '(No Subject)',
-                from: parsed.from?.text || parsed.from?.value?.[0]?.address || 'Unknown',
+                subject: parsed.subject || "(No Subject)",
+                from: parsed.from?.text || "Unknown",
                 to: parsed.to?.text || email,
-                date: parsed.date ? new Date(parsed.date).toLocaleString() : 'Unknown date',
-                text: parsed.text || parsed.textAsHtml || '(No content)',
-                html: parsed.html || null,
-                snippet: (parsed.text || '').substring(0, 150) + '...'
+                date: parsed.date ? new Date(parsed.date).toLocaleString() : "Unknown date",
+                snippet: (parsed.text || "").substring(0, 150) + "...",
               });
             });
           });
         });
 
-        fetch.once('error', (err) => {
+        fetch.once("error", (err) => {
           imap.end();
           reject(err);
         });
 
-        fetch.once('end', () => {
+        fetch.once("end", () => {
           imap.end();
         });
       });
     });
 
-    imap.once('error', (err) => {
-      reject(new Error('IMAP connection failed: ' + err.message));
+    imap.once("error", (err) => {
+      reject(new Error("IMAP connection failed: " + err.message));
     });
 
-    imap.once('end', () => {
-      // Sort by date (most recent first)
+    imap.once("end", () => {
       emails.sort((a, b) => new Date(b.date) - new Date(a.date));
       resolve(emails);
     });
@@ -204,7 +195,8 @@ function fetchImapEmails(email, password, maxEmails = 10) {
   });
 }
 
-const PORT = 5000;
-app.listen(PORT, '0.0.0.0', () => {
+/* -------------------- SERVER START -------------------- */
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
