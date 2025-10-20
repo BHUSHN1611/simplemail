@@ -7,7 +7,7 @@ const Footer = () => {
     { name: 'Bhushan Jadhav',  image: 'BJ' },
     { name: 'Abhishek Yadav',  image: 'AY'},
     { name: 'Rahul Singh',  image: 'RS'},
-    { name: 'Riddhi Makawana',  image: 'RM'},
+    { name: 'Riddhi Makwana',  image: 'RM'},
     { name: 'Faizan Patel',  image: 'FP'}
   ];
   return (
