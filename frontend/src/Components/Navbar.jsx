@@ -3,7 +3,7 @@ import React from 'react'
 
 // Navbar Component
 const Navbar = () => {
-  const navItems = ['Home', 'Team details', 'Github repo', 'References' , 'Video'];
+  const navItems = ['Home', 'Features', 'Team', 'Github' , 'Video'];;
 
   return (
     <nav className="flex justify-center">
